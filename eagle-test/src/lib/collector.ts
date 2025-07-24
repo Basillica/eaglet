@@ -1,5 +1,5 @@
 import { LogCollectorConfig, LogEntry, LogLevel, LogContext, Breadcrumb } from './types';
-import { IndexedDBStore } from './store'; // Import the new IndexedDBStore
+import { IndexedDBStore } from './store';
 
 // Utility for debouncing
 export function debounce<T extends (...args: any) => void>(func: T, delay: number): T {
