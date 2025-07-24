@@ -8,21 +8,14 @@ This project comprises a client-side log collection and processing module, a rea
 2.  [Frontend: Log Dashboard (SolidJS & Tailwind CSS)](#2-frontend-log-dashboard-solidjs--tailwind-css)
     * [Purpose](#21-purpose)
     * [Project Setup](#22-project-setup)
-    * [Component Structure](#23-component-structure)
-    * [Key Technologies & Concepts](#24-key-technologies--concepts)
-    * [Running the Frontend](#25-running-the-frontend)
 3.  [LogCollector Module (Client-Side Log Processing)](#3-logcollector-module-client-side-log-processing)
     * [Purpose](#31-purpose)
     * [Core Files](#32-core-files)
-        * [`log-collector/src/types.ts`](#log-collectorsrctypests)
-        * [`log-collector/src/store.ts`](#log-collectorsrcstorets)
-        * [`log-collector/src/collector.ts`](#log-collectorsrccollectorts)
-        * [`log-collector/src/index.ts`](#log-collectorsrcindexts)
     * [Key Features & Concepts](#33-key-features--concepts)
     * [How to Use (API Reference)](#34-how-to-use-api-reference)
 4.  [Database Integration (IndexedDB Persistence)](#4-database-integration-indexeddb-persistence)
     * [Purpose](#41-purpose)
-    * [Implementation (`log-collector/src/store.ts`)](#42-implementation-log-collectorsrcstorets-1)
+    * [Implementation](#42-implementation)
     * [Integration with LogCollector](#43-integration-with-logcollector)
 5.  [Docker Compose Setup](#5-docker-compose-setup)
     * [Purpose](#51-purpose)
@@ -55,183 +48,20 @@ This frontend component is set up as a standard SolidJS project using Vite.
 1.  **Node.js Installation**: Ensure you have Node.js (v18+) and npm/yarn installed.
 2.  **Project Initialization**:
     ```bash
-    # From your project root, create the frontend directory and SolidJS app
-    npm create vite@latest frontend -- --template solid-ts
-    cd frontend
+    cd eagle-test
     npm install
+    npm start
     ```
-3.  **Tailwind CSS Installation & Configuration**:
-    ```bash
-    npm install -D tailwindcss postcss autoprefixer
-    npx tailwindcss init -p
-    ```
-    * **`frontend/tailwind.config.cjs`**:
-        ```javascript
-        /** @type {import('tailwindcss').Config} */
-        module.exports = {
-          content: [
-            "./index.html",
-            "./src/**/*.{js,ts,jsx,tsx}",
-          ],
-          // ...
-        }
-        ```
-    * **`frontend/postcss.config.cjs`**: (Automatically generated, no changes typically needed)
-        ```javascript
-        module.exports = {
-          plugins: {
-            tailwindcss: {},
-            autoprefixer: {},
-          },
-        };
-        ```
-    * **`frontend/src/index.css`**: Replace its entire content with Tailwind directives and your custom log-level classes:
-        ```css
-        @tailwind base;
-        @tailwind components;
-        @tailwind utilities;
-
-        /* Custom styles for log levels */
-        .log-trace { background-color: #f0f9ff; color: #0c4a6e; }
-        /* ... more log level styles ... */
-
-        /* Optional: Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            /* ... etc ... */
-        }
-        ```
-
-### 2.3 Component Structure
-
-The frontend application is organized into the following key files within `frontend/src/`:
-
-* **`frontend/src/App.tsx`**: The root component that renders `LogDashboard`.
-    ```tsx
-    // frontend/src/App.tsx
-    import LogDashboard from './LogDashboard';
-    // ...
-    function App() { return (<LogDashboard />); }
-    export default App;
-    ```
-* **`frontend/src/LogDashboard.tsx`**: The main component for the entire log dashboard UI. It manages state for logs, filters, and pagination using SolidJS signals and memos.
-    ```tsx
-    // frontend/src/LogDashboard.tsx
-    import { createSignal, onMount, For, createMemo, Show } from 'solid-js';
-    import LogEntryCard from './LogEntryCard';
-    import { generateMockLog, LOG_LEVELS, SERVICES, LogEntry } from './logUtils';
-
-    const PAGE_SIZE = 10;
-    const NUMBER_OF_MOCK_LOGS = 100;
-
-    const LogDashboard: () => JSX.Element = () => {
-        // ... state signals ...
-        // ... memoized filtered/sorted logs ...
-        // ... memoized logs to display ...
-
-        onMount(() => { /* ... log generation ... */ });
-        const handleApplyFilters = () => { /* ... */ };
-        const handleClearFilters = () => { /* ... */ };
-        const handleLoadMore = () => { /* ... */ };
-
-        return (
-            <div class="container mx-auto p-4">
-                {/* Header, Search & Filter Bar, Log Display Area, Load More Button */}
-                {/* ... UI elements with SolidJS reactivity and Tailwind classes ... */}
-            </div>
-        );
-    };
-
-    export default LogDashboard;
-    ```
-* **`frontend/src/LogEntryCard.tsx`**: A sub-component responsible for rendering a single log entry. It manages its own "View Details" toggle state.
-    ```tsx
-    // frontend/src/LogEntryCard.tsx
-    import { createSignal, Show } from 'solid-js';
-    import { LogEntry, getLevelColorClass } from './logUtils';
-
-    interface LogEntryCardProps { log: LogEntry; }
-
-    const LogEntryCard: (props: LogEntryCardProps) => JSX.Element = (props) => {
-        const [showDetails, setShowDetails] = createSignal(false);
-        const timestamp = new Date(props.log.timestamp).toLocaleString();
-        const jsonDetails = { /* ... prepare log details for JSON display ... */ };
-
-        return (
-            <div class={`log-entry p-4 rounded-lg shadow-sm border ${getLevelColorClass(props.log.level)} relative overflow-hidden`}>
-                {/* ... log display elements (level, timestamp, message, service, etc.) ... */}
-                <Show when={showDetails()}>
-                    <div class="details-panel p-2 mt-3 border-t border-gray-300 text-xs max-h-48 overflow-y-auto">
-                        <pre class="whitespace-pre-wrap font-mono text-[10px]">{JSON.stringify(jsonDetails, null, 2)}</pre>
-                    </div>
-                </Show>
-                <button
-                    class="toggle-details absolute bottom-2 right-2 px-3 py-1 bg-gray-200 text-xs rounded-md hover:bg-gray-300"
-                    onClick={() => setShowDetails(!showDetails())}
-                >
-                    {showDetails() ? 'Hide Details' : 'View Details'}
-                </button>
-            </div>
-        );
-    };
-
-    export default LogEntryCard;
-    ```
-* **`frontend/src/logUtils.ts`**: Contains utility functions for generating mock log data (`generateMockLog`, `getRandomElement`, `generateUUID`), and a helper for applying log level CSS classes (`getLevelColorClass`). It also defines the `LogEntry` and `LogLevel` types, which ideally should be imported from the `log-collector` module's `types.ts` for consistency in a real project.
-    ```typescript
-    // frontend/src/logUtils.ts
-    export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'critical';
-
-    export interface LogContext { /* ... */ }
-    export interface Breadcrumb { /* ... */ }
-    export interface LogEntry {
-        level: LogLevel;
-        message: string;
-        timestamp: string;
-        // ... more log entry fields ...
-    }
-
-    export const LOG_LEVELS: LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'critical'];
-    export const SERVICES = ['frontend-app', 'backend-api', 'auth-service', 'payment-gateway', 'reporting-service'];
-
-    export function getRandomElement<T>(arr: T[]): T { /* ... */ }
-    export function generateUUID(): string { /* ... */ }
-    export function generateMockLog(): LogEntry { /* ... detailed mock log generation ... */ }
-    export function getLevelColorClass(level: LogLevel): string { return `log-${level}`; }
-    ```
-
-### 2.4 Key Technologies & Concepts
-
-* **SolidJS**: A high-performance reactive JavaScript framework that compiles to native DOM operations.
-    * **Signals**: Used for managing reactive state (`allMockLogs`, `currentPage`, `searchTerm`, `selectedLevel`, `selectedService`, `showDetails` in `LogEntryCard`).
-    * **Memos (`createMemo`)**: Used to cache computed values (`filteredAndSortedLogs`, `logsToDisplay`) that only re-evaluate when their dependencies change, optimizing performance.
-    * **`onMount`**: Lifecycle hook used for initial data fetching/generation (e.g., generating mock logs when the component mounts).
-    * **`<For>` Component**: Efficiently renders lists of items in SolidJS, automatically re-rendering only affected items when the underlying array changes.
-    * **`<Show>` Component**: Conditionally renders content based on a signal's value, including a `fallback` option.
-* **Tailwind CSS**: A utility-first CSS framework. Styles are applied directly via classes in the JSX, making UI development fast and responsive. Custom log level colors are defined in `src/index.css` using Tailwind's `@apply` or directly, as shown in the setup.
-
-### 2.5 Running the Frontend
-
-From the `frontend/` directory:
-
-```bash
-npm run dev
-```
-
-Open your browser to http://localhost:5173/ (or the address provided by Vite).
 
 ## 3. LogCollector Module (Client-Side Log Processing)
 ### 3.1 Purpose
 The `LogCollector` is a robust client-side module designed to capture, process, and efficiently send application logs to a backend DSN (Data Source Name). It incorporates advanced features like batching, circuit breaking, rate limiting, log level sampling, PII masking, and offline persistence to ensure reliable and compliant log collection.
 
 ### 3.2 Core Files
-The log-collector module typically resides in a `log-collector/src/` directory (or similar) within your project root.
 
-
-Defines all TypeScript interfaces and types for the log collector configuration and log entries:
+All TypeScript interfaces and types for the log collector configuration and log entries:
 
 ```typescript
-// log-collector/src/types.ts
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'critical';
 
 export interface LogContext { /* ... */ }
@@ -254,7 +84,6 @@ export interface LogCollectorConfig {
 ```
 
 ```typescript
-// log-collector/src/store.ts
 import { LogEntry } from './types';
 
 interface DBConfig { dbName: string; storeName: string; version: number; }
@@ -271,56 +100,6 @@ export class IndexedDBStore {
     public async deleteLogs(ids: string[]): Promise<void> { /* ... delete logs by ID ... */ }
     // ... other methods like clear, count ...
 }
-```
-
-`collector.ts` contains the core LogCollector class and its associated utility functions. This is where the main logic for log capture, processing, and sending resides.
-
-```typescript
-// log-collector/src/collector.ts
-import { LogEntry, LogCollectorConfig, LogLevel, Breadcrumb, LogContext } from './types';
-import { IndexedDBStore } from './store'; // If using IndexedDB persistence
-
-export class LogCollector {
-    private config: LogCollectorConfig;
-    private logQueue: LogEntry[] = [];
-    private breadcrumbs: Breadcrumb[] = [];
-    private dbStore: IndexedDBStore | null = null;
-    // ... internal state for batching, circuit breaker, rate limiter ...
-
-    constructor(config: LogCollectorConfig) {
-        this.config = { /* ... default config with overrides ... */ };
-        // ... initialize persistence, timers, event listeners ...
-    }
-
-    public updateConfig(newConfig: Partial<LogCollectorConfig>): void { /* ... merge new config ... */ }
-
-    private isLoggable(level: LogLevel): boolean { /* ... sampling & rate limiting checks ... */ }
-    private isUrlIgnored(url: string): boolean { /* ... ignoreUrl/includeUrl checks ... */ }
-    private applyPIIMasking(logEntry: LogEntry): LogEntry | null { /* ... apply beforeSend callback ... */ }
-
-    private appendLog(entry: LogEntry): void { /* ... add to queue, trigger batching ... */ }
-    public log(level: LogLevel, message: string, error?: Error, context?: LogContext): void { /* ... main logging method ... */ }
-    // ... convenience logging methods (info, warn, error, debug, etc.) ...
-
-    public addBreadcrumb(breadcrumb: Breadcrumb): void { /* ... add to breadcrumbs array, apply beforeBreadcrumb ... */ }
-    public setGlobalContext(context: LogContext): void { /* ... update global context ... */ }
-    public setUserContext(context: LogContext | null): void { /* ... update user context ... */ }
-
-    private sendLogs(logs: LogEntry[]): Promise<void> { /* ... actual HTTP sending logic, circuit breaker handling ... */ }
-    private processQueue(): void { /* ... debounced function to send logs from queue ... */ }
-    private drainPersistedLogs(): Promise<void> { /* ... retrieve and send logs from IndexedDB ... */ }
-
-    // ... utility functions like debounce, throttle, matchesUrl ...
-}
-```
-
-The entry point for the module, simply re-exporting the LogCollector class and other relevant `types/functions` for external consumption.
-
-```typescript
-// log-collector/src/index.ts
-export { LogCollector } from './collector';
-export * from './types';
-export { IndexedDBStore } from './store'; // If you want to expose the store directly
 ```
 
 ### 3.3 Key Features & Concepts
@@ -390,7 +169,7 @@ setTimeout(() => {
 }, 10000);
 ```
 
-## 4. Database Integration
+## 4. Database Integration (IndexedDB Persistence)
 ### 4.1 Purpose
 The `IndexedDBStore` provides a robust client-side storage mechanism for logs. Its primary purpose is to ensure that log entries are not lost due to network unavailability, browser crashes, or page navigation before they can be sent to the backend. It acts as a reliable buffer for the LogCollector.
 
@@ -429,7 +208,6 @@ Create a `docker-compose.yml` file in your project root:
 version: '3.8'
 
 services:
-  # Frontend Service (SolidJS Dashboard)
   frontend:
     build:
       context: ./frontend
