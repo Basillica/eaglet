@@ -1,64 +1,6 @@
 import { LogCollectorConfig, LogEntry, LogLevel, LogContext, Breadcrumb } from './types';
 import { IndexedDBStore } from './store';
-
-// Utility for debouncing
-export function debounce<T extends (...args: any) => void>(func: T, delay: number): T {
-    let timeout: ReturnType<typeof setTimeout>;
-    return function(this: any, ...args: Parameters<T>) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
-    } as T;
-}
-
-// Utility for throttling
-export function throttle<T extends (...args: any) => void>(func: T, limit: number): T {
-    let inThrottle: boolean;
-    let lastResult: any;
-    return function(this: any, ...args: Parameters<T>) {
-        if (!inThrottle) {
-            inThrottle = true;
-            setTimeout(() => (inThrottle = false), limit);
-            lastResult = func.apply(this, args);
-        }
-        return lastResult;
-    } as T;
-}
-
-// Helper to check if a URL matches any pattern in an array
-export function matchesUrl(url: string, patterns: (string | RegExp)[]): boolean {
-    return patterns.some(pattern => {
-        if (typeof pattern === 'string') {
-            return url.includes(pattern);
-        }
-        return pattern.test(url);
-    });
-}
-
-// Helper to check if an error message matches any pattern/function
-export function matchesError(error: Error | string, patterns: (string | RegExp | ((error: Error | string) => boolean))[]): boolean {
-    const errorMessage = typeof error === 'string' ? error : error.message;
-    return patterns.some(pattern => {
-        if (typeof pattern === 'string') {
-            return errorMessage.includes(pattern);
-        }
-        if (pattern instanceof RegExp) {
-            return pattern.test(errorMessage);
-        }
-        if (typeof pattern === 'function') {
-            return pattern(error);
-        }
-        return false;
-    });
-}
-
-// Simple UUID generator (moved here for collector's use, or use a library)
-function generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0,
-            v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
+import { debounce, generateUUID, matchesError, matchesUrl} from './utils'
 
 export class LogCollector {
     private config: Required<LogCollectorConfig>;
@@ -210,7 +152,7 @@ export class LogCollector {
                         const success = navigator.sendBeacon(this.config.dsn, payload);
                         if (success) {
                             console.log('LogCollector: Logs sent via navigator.sendBeacon on unload.');
-                            const sentIds = logsToSendFromDB.map(log => log.id).filter((id): id is string => id !== undefined); // Changed to string
+                            const sentIds = logsToSendFromDB.map(log => log.id).filter((id): id is string => id !== undefined);
                             if (sentIds.length > 0) {
                                 this.indexedDBStore.deleteLogs(sentIds).catch(e => console.error("Error clearing sent logs from DB", e));
                             }
@@ -418,7 +360,7 @@ export class LogCollector {
                     requestUrl: url,
                     statusCode: response.status,
                     statusText: response.statusText,
-                    responseSize: response.headers.get('content-length') ? parseInt(response.headers.get('content-length')!) : undefined, // Added responseSize
+                    responseSize: response.headers.get('content-length') ? parseInt(response.headers.get('content-length')!) : undefined,
                     durationMs: durationMs,
                 });
                 self.addBreadcrumb('xhr', `Fetch: ${method} ${url} ${response.status}`, {
@@ -602,8 +544,10 @@ export class LogCollector {
 
         // 2. Apply Client-Side Sampling
         const samplingRate = this.config.samplingRates[level] ?? 1.0; // Default to 1.0 if not specified
-        if (Math.random() > samplingRate) {
-            // console.log(`LogCollector: Log for level '${level}' skipped due to sampling (${samplingRate * 100}% rate).`);
+        if (Math.random() >= samplingRate) {
+            // Example: If samplingRate is 0.1 (10% to keep)
+            // Math.random() will be >= 0.1 approximately 90% of the time,
+            // so 90% of logs are skipped, 10% are kept.
             return;
         }
 
@@ -645,7 +589,7 @@ export class LogCollector {
             context: additionalContext,
             globalContext: this.config.getGlobalContext(),
             userContext: this.config.getUserContext(),
-            device: this.getDeviceInfo(), // Now includes more data
+            device: this.getDeviceInfo(),
             breadcrumbs: [...this._breadcrumbs],
         };
 
@@ -804,7 +748,7 @@ export class LogCollector {
         }
 
         let logsToSend: LogEntry[] = [];
-        let logsIdsToDelete: string[] = []; // Changed to string[]
+        let logsIdsToDelete: string[] = [];
 
         this.isSending = true;
 
@@ -813,7 +757,7 @@ export class LogCollector {
             // This ensures we're always pulling from the persisted source.
             const allStoredLogs = await this.indexedDBStore.getAllLogs().catch(() => []);
             logsToSend = allStoredLogs.slice(0, this.config.batchSize);
-            logsIdsToDelete = logsToSend.map(log => log.id).filter((id): id is string => id !== undefined); // Ensure ID is a string
+            logsIdsToDelete = logsToSend.map(log => log.id).filter((id): id is string => id !== undefined); // Ensure ID is a string and valid
 
         } else {
             // If no IndexedDB, operate purely on the in-memory queue.
@@ -855,7 +799,6 @@ export class LogCollector {
                         credentials: 'omit'
                     });
 
-                    console.log(response, "logsToSendlogsToSendlogsToSendlogsToSend")
                     if (response && !response?.ok) {
                         const errorText = await response?.text();
                         console.log(response, "the fucking response")
@@ -866,13 +809,12 @@ export class LogCollector {
                         this.handleSendSuccess(logsToSend, logsIdsToDelete);
                     }
                 } catch (error) {
-                    console.log(error, "the fucking >>>>>>>>>>>>>>")
+                    return
                 }
             } else {
                 this.handleSendSuccess(logsToSend, logsIdsToDelete);
             }
         } catch (error: any) {
-            console.error('LogCollector: Network error sending logs:', error);
             this.handleSendFailure(logsToSend, retries, error, logsIdsToDelete);
         } finally {
             this.isSending = false;
@@ -906,10 +848,9 @@ export class LogCollector {
         }
     }
 
-    private async handleSendFailure(logsFailed: LogEntry[], retries: number, error: any, originalIds: string[]) { // Changed originalIds type to string[]
+    private async handleSendFailure(logsFailed: LogEntry[], retries: number, error: any, originalIds: string[]) {
         this.consecutiveFailures++;
         this.config.onSendFailure(error, logsFailed);
-        console.log("-------------------------------")
 
         if (this.consecutiveFailures >= this.CIRCUIT_BREAKER_THRESHOLD) {
             this.openCircuit();

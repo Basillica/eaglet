@@ -14,7 +14,7 @@ export interface Breadcrumb {
 }
 
 export interface LogEntry {
-    id?: string; // Changed to string for UUIDs
+    id?: string;
     level: LogLevel;
     message: string;
     timestamp: string; // ISO 8601 format
@@ -39,18 +39,18 @@ export interface LogEntry {
         user_agent?: string;
         user_agent_client_hints?: any; // For modern UA Client Hints
 
-        // New: Network Information
+        // Network Information
         connection_type?: string; // 'cellular', 'wifi', 'ethernet', 'none', 'unknown' etc.
         effective_connection_type?: 'slow-2g' | '2g' | '3g' | '4g';
         rtt?: number; // Round-trip time in ms
         downlink?: number; // Estimated downlink speed in Mbps
         save_data?: boolean; // User has data saver enabled
 
-        // New: Hardware Information
+        // Hardware Information
         hardware_concurrency?: number; // Number of logical processor cores
         device_memory?: number; // Device RAM in GB (approx)
 
-        // New: Browser/Runtime Environment (not strictly device, but useful context)
+        // Browser/Runtime Environment (not strictly device, but useful context)
         js_heap_size_limit?: number; // JS heap limit (bytes) - Chrome only, experimental
         total_js_heap_size?: number; // Total JS heap allocated (bytes) - Chrome only, experimental
         used_js_heap_size?: number; // Used JS heap (bytes) - Chrome only, experimental
@@ -80,7 +80,6 @@ export interface LogEntry {
         x: number;
         y: number;
     };
-    // id?: number; // Removed as it's now string 'id' above
 }
 
 export interface LogCollectorConfig {

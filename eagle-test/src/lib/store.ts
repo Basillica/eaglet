@@ -1,4 +1,4 @@
-import { LogEntry } from './types'; // Assuming types.ts is in the same directory
+import { LogEntry } from './types';
 
 interface DBConfig {
     dbName: string;
@@ -6,7 +6,7 @@ interface DBConfig {
     version: number;
 }
 
-// Simple UUID generator (for demonstration, consider a robust library for production)
+// Simple UUID generator
 function generateUUID(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0,
@@ -52,7 +52,7 @@ export class IndexedDBStore {
                 if (!db.objectStoreNames.contains(this.config.storeName)) {
                     // Create object store if it doesn't exist.
                     // 'id' is the primary key, NO autoIncrement.
-                    db.createObjectStore(this.config.storeName, { keyPath: 'id' }); // Removed autoIncrement
+                    db.createObjectStore(this.config.storeName, { keyPath: 'id' });
                     console.log(`IndexedDB: Object store '${this.config.storeName}' created or upgraded.`);
                 }
                 // Future versions could add more object stores or indexes here.
@@ -204,7 +204,7 @@ export class IndexedDBStore {
      * @param ids An array of IDs of logs to delete.
      * @returns A Promise that resolves when the logs are deleted.
      */
-    async deleteLogs(ids: string[]): Promise<void> { // Changed ids type to string[]
+    async deleteLogs(ids: string[]): Promise<void> {
         if (!ids || ids.length === 0) {
             return Promise.resolve();
         }

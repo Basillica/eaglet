@@ -5,7 +5,7 @@ import { generateMockLog, LOG_LEVELS, SERVICES } from "../logUtils";
 import { LogEntry } from "../lib/types";
 
 const PAGE_SIZE = 10;
-const NUMBER_OF_MOCK_LOGS = 100; // Total mock logs to generate
+const NUMBER_OF_MOCK_LOGS = 100; // Total logs to generate
 
 const LogDashboard: () => JSX.Element = () => {
   const [allMockLogs, setAllMockLogs] = createSignal<LogEntry[]>([]);
