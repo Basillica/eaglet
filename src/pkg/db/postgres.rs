@@ -1,25 +1,25 @@
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use tracing::info;
 use std::time::Duration;
-use crate::models; // Import your LogEntry and other models
-use serde_json::Value as JsonValue; // Alias for serde_json::Value
+use crate::models;
+use serde_json::Value as JsonValue;
 
 /// Establishes a connection pool to the PostgreSQL database.
 pub async fn get_db_pool(database_url: &str) -> Result<Pool<Postgres>, sqlx::Error> {
     info!("Attempting to connect to PostgreSQL at: {}", database_url);
     PgPoolOptions::new()
-        .max_connections(50) // Max connections in the pool
-        .min_connections(5)  // Min connections kept open
-        .acquire_timeout(Duration::from_secs(5)) // How long to wait for a connection
+        .max_connections(50)
+        .min_connections(5)
+        .acquire_timeout(Duration::from_secs(5))
         .connect(database_url)
         .await
 }
 
 /// Initializes the database schema.
-/// Creates the 'logs' table if it doesn't exist.
 pub async fn initialize_db_schema(pool: &Pool<Postgres>) -> Result<(), sqlx::Error> {
     info!("Initializing PostgreSQL database schema...");
 
+    // Creates the 'logs' table if it doesn't exist.
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS logs (
@@ -87,7 +87,7 @@ pub async fn insert_log_entries(
 ) -> Result<(), sqlx::Error> {
     info!("Attempting to insert batch of {} log entries into PostgreSQL.", log_entries.len());
 
-    let mut tx = pool.begin().await?; // Start a transaction for batch insertion
+    let mut tx = pool.begin().await?;
 
     for log in log_entries {
         // Convert LogLevel enum to string for DB storage
@@ -124,12 +124,12 @@ pub async fn insert_log_entries(
         .bind(log.id)
         .bind(level_str)
         .bind(log.message)
-        .bind(log.timestamp) // Assumes your timestamp string is parseable by Postgres (e.g., ISO 8601)
+        .bind(log.timestamp)
         .bind(log.service)
         .bind(log.context.map(|c| JsonValue::from(serde_json::to_value(c).unwrap_or_default()))) // Convert HashMap to JsonValue
         .bind(JsonValue::from(serde_json::to_value(log.global_context).unwrap_or_default())) // global_context is not Option
         .bind(log.user_context.map(|uc| JsonValue::from(serde_json::to_value(uc).unwrap_or_default())))
-        .bind(log.user.as_ref().and_then(|u| u.id.clone())) // Direct bind Uuid
+        .bind(log.user.as_ref().and_then(|u| u.id.clone()))
         .bind(log.user.as_ref().and_then(|u| u.username.clone()))
         .bind(log.user.as_ref().and_then(|u| u.email.clone()))
         .bind(log.device.map(|d| JsonValue::from(serde_json::to_value(d).unwrap_or_default()))) // Convert DeviceInfo struct to JsonValue

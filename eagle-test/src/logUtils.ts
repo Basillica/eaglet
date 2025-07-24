@@ -1,6 +1,4 @@
 import { LogEntry, LogLevel, BreadcrumbType } from "./lib/types";
-// You might need to adjust 'types' path based on your project structure.
-// For now, let's include basic types here for self-containment if `types.ts` isn't ready.
 
 export interface LogContext {
     [key: string]: any;

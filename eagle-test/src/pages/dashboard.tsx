@@ -1,4 +1,3 @@
-// src/LogDashboard.tsx
 import { createSignal, onMount, For, createMemo, Show, JSX } from "solid-js";
 import LogEntryCard from "../components/logCard";
 import { generateMockLog, LOG_LEVELS, SERVICES } from "../logUtils";

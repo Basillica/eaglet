@@ -1,7 +1,6 @@
 use actix_web::{get, middleware, post, web, App, HttpResponse, HttpServer, Responder};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::mpsc;
-use tokio::time::sleep;
 use tracing::{error, info, instrument, warn};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 use validator::Validate;
@@ -28,9 +27,6 @@ async fn background_log_processor(mut receiver: mpsc::Receiver<Vec<models::LogEn
                     "Background processor received batch of {} logs.",
                     log_batch.len()
                 );
-                // Simulate asynchronous processing (e.g., sending to Kafka)
-                // In a real scenario, this would involve actual I/O operations
-                sleep(Duration::from_millis(50)).await; // Simulate network latency/processing time
 
                 if let Err(e) = pkg::db::postgres::insert_log_entries(&db_pool, log_batch).await {
                     error!("Failed to insert log entries into PostgreSQL: {:?}", e);
@@ -63,10 +59,10 @@ async fn ingest_log_batch(
             error!("Log validation failed for an entry: {:?}", errors);
             continue; // Skip invalid entries
         }
-        // Assuming mask_pii is a method on LogEntry
+        // if mask_pii is enabled
         let mut processed_log_entry = log_entry;
         processed_log_entry.mask_pii();
-        valid_log_entries.push(processed_log_entry); // Or processed_log_entry if PII masking is server-side
+        valid_log_entries.push(processed_log_entry);
     }
 
     if valid_log_entries.is_empty() {
@@ -119,8 +115,8 @@ async fn main() -> std::io::Result<()> {
 
     info!("Starting log ingestion backend service...");
 
-    let database_url = "postgresql://app_user:mysecretpassword@localhost:5432/logs_db"; // Your DB URL
-    let server_address = "127.0.0.1:8080"; // Bind to all interfaces for production deployment
+    let database_url = "postgresql://app_user:mysecretpassword@localhost:5432/logs_db";
+    let server_address = "127.0.0.1:8080";
 
     let db_pool = match pkg::db::postgres::get_db_pool(database_url).await {
         Ok(pool) => {

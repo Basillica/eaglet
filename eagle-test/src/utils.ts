@@ -22,5 +22,5 @@ export const logger = new LogCollector({
   enableNetworkCapture: true,
   enableDOMCapture: true,
   enableNavigationCapture: true,
-  // ... any other configurations you need
+  // ... any other configurations
 });
