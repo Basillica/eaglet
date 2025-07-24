@@ -1,0 +1,29 @@
+version: '3.8' # Specify the Docker Compose file format version
+
+services:
+  # Service for your PostgreSQL database
+  log_postgres:
+    container_name: log_postgres # A friendly name for your container
+    image: postgres:16-alpine # Using a lightweight Alpine-based PostgreSQL 16 image
+    restart: unless-stopped # Always restart unless explicitly stopped
+    environment:
+      POSTGRES_DB: logs_db # The name of the database to create
+      POSTGRES_USER: app_user # The username for the database
+      POSTGRES_PASSWORD: mysecretpassword # The password for the database user
+    ports:
+      - "5432:5432" # Map host port 5432 to container port 5432
+    volumes:
+      # Persist data to a named volume to ensure data is not lost
+      # when the container is stopped or removed.
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - my_backend_network # Connect to a custom network
+
+# Define named volumes for data persistence
+volumes:
+  pg_data:
+
+# Define custom networks (optional but good practice)
+networks:
+  my_backend_network:
+    driver: bridge # Default bridge network driver

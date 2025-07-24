@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+/* Custom styles for log levels (copy from your original HTML <style> block) */
+.log-trace { background-color: #f0f9ff; color: #0c4a6e; } /* sky-50, sky-900 */
+.log-debug { background-color: #f0fdf4; color: #166534; } /* emerald-50, emerald-800 */
+.log-info { background-color: #eff6ff; color: #1e40af; } /* blue-50, blue-800 */
+.log-warn { background-color: #fffbeb; color: #b45309; } /* amber-50, amber-800 */
+.log-error { background-color: #fef2f2; color: #b91c1c; } /* red-50, red-700 */
+.log-fatal { background-color: #fdf2f8; color: #be185d; } /* pink-50, pink-700 */
+.log-critical { background-color: #fef2f2; color: #7f1d1d; font-weight: bold; } /* red-50, red-900 */
+
+/* Optional: Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

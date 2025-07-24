@@ -1,0 +1,1 @@
+export { LogCollector } from './collector'
