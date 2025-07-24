@@ -1,2 +1,30 @@
 /target
-eagle-test/node_modules
+
+eagle-test/dist
+eagle-test/.wrangler
+eagle-test/.output
+eagle-test/.vercel
+eagle-test/.netlify
+eagle-test/.vinxi
+eagle-test/app.config.timestamp_*.js
+
+# Environment
+.env
+.env*.local
+
+# dependencies
+eagle-test//node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+*.launch
+.settings/
+
+# Temp
+gitignore
+
+# System Files
+.DS_Store
+Thumbs.db
